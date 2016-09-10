@@ -32,3 +32,6 @@ from pyxsim.instruments import \
     XRS_Imager, XRS_Calorimeter, \
     Hitomi_SXS, Athena_WFI, \
     Athena_XIFU
+
+from pyxsim.light_cone import \
+    XrayLightCone
