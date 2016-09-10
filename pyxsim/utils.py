@@ -8,6 +8,7 @@ import os
 import sys
 from yt.config import ytcfg
 import logging
+from yt.utilities.on_demand_imports import _astropy
 
 pyxsimLogger = logging.getLogger("pyxsim")
 
@@ -153,3 +154,20 @@ def merge_files(input_files, output_file, clobber=False,
         d.create_dataset(k, data=np.concatenate(data[k]))
 
     f_out.close()
+
+def rebin_events(events, nx, dtheta):
+    new_wcs = _astropy.pywcs.WCS(naxis=2)
+    new_wcs.wcs.crval = events.parameters["sky_center"].d
+    new_wcs.wcs.crpix = np.array([0.5*(nx+1)]*2)
+    new_wcs.wcs.cdelt = [-dtheta, dtheta]
+    new_wcs.wcs.ctype = ["RA---TAN","DEC--TAN"]
+    new_wcs.wcs.cunit = ["deg"]*2
+    xpix, ypix = new_wcs.wcs_world2pix(events["xsky"], events["ysky"], 1)
+    events.events['xpix'] = xpix
+    events.events['ypix'] = ypix
+    xsky, ysky = new_wcs.wcs_pix2world(events["xpix"], events["ypix"], 1)
+    events.events['xsky'] = xsky
+    events.events['ysky'] = ysky
+    events.parameters['pix_center'] = new_wcs.wcs.crpix[:]
+    events.parameters['dtheta'] = YTQuantity(dtheta, "deg")
+    events.wcs = new_wcs

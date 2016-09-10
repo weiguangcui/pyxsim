@@ -2,7 +2,7 @@ import numpy as np
 from pyxsim.event_list import EventList
 from pyxsim.responses import AuxiliaryResponseFile, \
     RedistributionMatrixFile
-from pyxsim.utils import mylog
+from pyxsim.utils import mylog, rebin_events
 from yt.funcs import get_pbar, ensure_numpy_array, \
     iterable
 from yt.units.yt_array import YTQuantity, YTArray
@@ -70,21 +70,7 @@ class InstrumentSimulator(object):
         Rebin event positions to a new binning with the same celestial
         coordinates.
         """
-        new_wcs = _astropy.pywcs.WCS(naxis=2)
-        new_wcs.wcs.crval = events.parameters["sky_center"].d
-        new_wcs.wcs.crpix = np.array([0.5*(self.nx+1)]*2)
-        new_wcs.wcs.cdelt = [-self.dtheta, self.dtheta]
-        new_wcs.wcs.ctype = ["RA---TAN","DEC--TAN"]
-        new_wcs.wcs.cunit = ["deg"]*2
-        xpix, ypix = new_wcs.wcs_world2pix(events["xsky"], events["ysky"], 1)
-        events.events['xpix'] = xpix
-        events.events['ypix'] = ypix
-        xsky, ysky = new_wcs.wcs_pix2world(events["xpix"], events["ypix"], 1)
-        events.events['xsky'] = xsky
-        events.events['ysky'] = ysky
-        events.parameters['pix_center'] = new_wcs.wcs.crpix[:]
-        events.parameters['dtheta'] = YTQuantity(self.dtheta, "deg")
-        events.wcs = new_wcs
+        rebin_events(events, self.nx, self.dtheta)
 
     def convolve_with_psf(self, events, prng):
         r"""
