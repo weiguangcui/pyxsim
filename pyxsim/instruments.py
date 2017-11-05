@@ -158,7 +158,10 @@ class InstrumentSimulator(object):
                 ww = weights[:nc]
                 e = sorted_e[fcurr:last]
                 nn = np.logical_and(low <= e, e < high).sum()
-                channelInd = prng.choice(nc, size=nn, p=ww)
+                if nc == len(ww):
+                    channelInd = prng.choice(nc, size=nn, p=ww)
+                else:
+                    print("Something is not correct!! nc=", nc, ", nn=", nn, ", ww=", ww)
                 detectedChannels.append(trueChannel[channelInd])
                 fcurr += nn
                 pbar.update(fcurr)
