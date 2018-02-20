@@ -217,13 +217,13 @@ class PhotonList(object):
         parameters : dict, optional
             A dictionary of parameters to be passed for the source model to use, if necessary.
         center : string or array_like, optional
-            The origin of the photon spatial coordinates. Accepts "c", "max", or a coordinate. 
-            If not specified, pyxsim attempts to use the "center" field parameter of the data_source. 
+            The origin of the photon spatial coordinates. Accepts "c", "max", or a coordinate.
+            If not specified, pyxsim attempts to use the "center" field parameter of the data_source.
         dist : float, (value, unit) tuple, or :class:`~yt.units.yt_array.YTQuantity`, optional
             The angular diameter distance, used for nearby sources. This may be
             optionally supplied instead of it being determined from the *redshift*
             and given *cosmology*. If units are not specified, it is assumed to be
-            in Mpc. To use this, the redshift must be set to zero. 
+            in Mpc. To use this, the redshift must be set to zero.
         cosmology : :class:`~yt.utilities.cosmology.Cosmology`, optional
             Cosmological information. If not supplied, we try to get
             the cosmology from the dataset. Otherwise, LCDM with
@@ -322,7 +322,7 @@ class PhotonList(object):
             re = data_source.radius+data_source.center
         else:
             # Compute rough boundaries of the object
-            # DOES NOT WORK for objects straddling periodic 
+            # DOES NOT WORK for objects straddling periodic
             # boundaries yet
             if sum(ds.periodicity) > 0:
                 mylog.warning("You are using a region that is not currently "
@@ -374,7 +374,7 @@ class PhotonList(object):
             if ds.periodicity[i] and len(photons[ax]) > 0:
                 tfl = photons[ax] < le[i].to('kpc')
                 tfr = photons[ax] > re[i].to('kpc')
-                photons[ax][tfl] += dw[i] 
+                photons[ax][tfl] += dw[i]
                 photons[ax][tfr] -= dw[i]
             photons[ax] -= parameters["center"][i].in_units("kpc")
 
@@ -521,9 +521,9 @@ class PhotonList(object):
         dist_new : float, (value, unit) tuple, or :class:`~yt.units.yt_array.YTQuantity`, optional
             The new value for the angular diameter distance, used for nearby sources.
             This may be optionally supplied instead of it being determined from the
-            cosmology. If units are not specified, it is assumed to be in Mpc. To use this, the 
-            redshift must be zero. 
-        absorb_model : :class:`~pyxsim.spectral_models.AbsorptionModel` 
+            cosmology. If units are not specified, it is assumed to be in Mpc. To use this, the
+            redshift must be zero.
+        absorb_model : :class:`~pyxsim.spectral_models.AbsorptionModel`
             A model for foreground galactic absorption.
         sky_center : array-like, optional
             Center RA, Dec of the events in degrees.
@@ -629,10 +629,32 @@ class PhotonList(object):
                                  "of photons.")
             my_n_obs = np.int64(n_ph_tot*fak)
 
+        Nn = 4294967294
         if my_n_obs == n_ph_tot:
-            idxs = np.arange(my_n_obs, dtype='int64')
+            if my_n_obs <= Nn:
+                idxs = np.arange(my_n_obs, dtype='uint32')
+            else:
+                idxs = np.arange(my_n_obs, dtype='uint64')
         else:
-            idxs = prng.permutation(n_ph_tot)[:my_n_obs].astype("int64")
+            if n_ph_tot <= Nn:
+                idxs = np.arange(n_ph_tot, dtype='uint32')
+                prng.shuffle(idxs)
+                idxs = idxs[:my_n_obs]
+            else:
+                Nc = np.int32(n_ph_tot/Nn)
+                idxs = np.zeros(my_n_obs, dtype=np.uint64)
+                Nup = np.uint32(my_n_obs/Nc)
+                for i in range(Nc+1):
+                    if (i+1)*Nc < n_ph_tot:
+                        idtm = np.arange(i*Nc, (i+1)*Nc, dtype='uint64')
+                        Nupt = Nup
+                    else:
+                        idtm = np.arange(i*Nc, n_ph_tot, dtype='uint64')
+                        Nupt = my_n_obs-i*Nup
+                    prng.shuffle(idtm)
+                    idxs[i*Nup, i*Nup+Nupt] = idtm[:Nupt]
+                    del(idtm)
+            # idxs = prng.permutation(n_ph_tot)[:my_n_obs].astype("int64")
         obs_cells = np.searchsorted(self.p_bins, idxs, side='right')-1
         delta = dx[obs_cells]
 
@@ -678,12 +700,18 @@ class PhotonList(object):
             xsky = x*x_hat[0] + y*x_hat[1] + z*x_hat[2]
             ysky = x*y_hat[0] + y*y_hat[1] + z*y_hat[2]
 
+        del(delta)
         if no_shifting:
             eobs = self.photons["Energy"][idxs]
         else:
-            shift = -vz.in_cgs()/clight
+            # shift = -vz.in_cgs()/clight
+            # shift = np.sqrt((1.-shift)/(1.+shift))
+            # eobs = self.photons["Energy"][idxs]*shift[obs_cells]
+            shift = -vz[obs_cells].in_cgs()/clight
             shift = np.sqrt((1.-shift)/(1.+shift))
-            eobs = self.photons["Energy"][idxs]*shift[obs_cells]
+            eobs = self.photons["Energy"][idxs]
+            eobs *= shift
+            del(shift)
         eobs *= scale_factor
 
         if absorb_model is None:
