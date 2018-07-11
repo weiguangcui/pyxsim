@@ -578,7 +578,7 @@ class EventList(object):
         f.close()
 
     @parallel_root_only
-    def write_fits_image(self, imagefile, clobber=False,
+    def write_fits_image(self, imagefile, clobber=False, radius=None, comments="",
                          emin=None, emax=None):
         r"""
         Generate a image by binning X-ray counts and write it to a FITS file.
@@ -630,7 +630,9 @@ class EventList(object):
         hdu.header["CDELT1"] = -float(self.parameters["dtheta"])
         hdu.header["CDELT2"] = float(self.parameters["dtheta"])
         hdu.header["EXPOSURE"] = float(self.parameters["ExposureTime"])
-
+        if radius is not None:
+                hdu.header["RADIUS"] = float(radius)
+        hdu.header["NOTE"] = comments
         hdu.writeto(imagefile, clobber=clobber)
 
     @parallel_root_only
