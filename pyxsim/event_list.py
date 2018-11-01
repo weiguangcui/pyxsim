@@ -589,6 +589,8 @@ class EventList(object):
             The name of the image file to write.
         clobber : boolean, optional
             Set to True to overwrite a previous file.
+        comments : The comments in str will be put into the fit file header. Defualt: 'None'
+                    It accepts str or list of str or tuple of str
         emin : float, optional
             The minimum energy of the photons to put in the image, in keV.
         emax : float, optional
@@ -631,8 +633,15 @@ class EventList(object):
         hdu.header["CDELT2"] = float(self.parameters["dtheta"])
         hdu.header["EXPOSURE"] = float(self.parameters["ExposureTime"])
         if radius is not None:
-                hdu.header["RADIUS"] = float(radius)
-        hdu.header["NOTE"] = comments
+                hdu.header["ORAD"] = float(radius)
+        # hdu.header["NOTE"] = comments
+        if isinstance(comments, type([])) or isinstance(comments, type(())):
+            for j in range(len(comments)):
+                hdu.header["COMMENT"+str(j+1)] = comments[j]
+        elif isinstance(comments, type("")) or isinstance(comments, type('')):
+            hdu.header["COMMENT"] = comments
+        else:
+            raise ValueError("Do not accept this comments type! Please use str or list")
         hdu.writeto(imagefile, clobber=clobber)
 
     @parallel_root_only
