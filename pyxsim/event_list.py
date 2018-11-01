@@ -579,7 +579,7 @@ class EventList(object):
 
     @parallel_root_only
     def write_fits_image(self, imagefile, clobber=False, radius=None, comments="",
-                         redshfit=None, emin=None, emax=None):
+                         redshift=None, emin=None, emax=None):
         r"""
         Generate a image by binning X-ray counts and write it to a FITS file.
 
