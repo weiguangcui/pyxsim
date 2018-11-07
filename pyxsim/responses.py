@@ -50,7 +50,7 @@ class AuxiliaryResponseFile(object):
         """
         Use the ARF to determine a subset of photons which will be
         detected. Returns a boolean NumPy array which is the same
-        is the same size as the number of photons, wherever it is 
+        is the same size as the number of photons, wherever it is
         "true" means those photons have been detected.
 
         Parameters
@@ -59,7 +59,7 @@ class AuxiliaryResponseFile(object):
             The energies of the photons to attempt to detect, in keV.
         area : float, tuple, or YTQuantity
             The collecting area associated with the event energies. If a floating-point
-            number, is assumed to be in cm^2. 
+            number, is assumed to be in cm^2.
         prng : :class:`~numpy.random.RandomState` object or :mod:`~numpy.random`, optional
             A pseudo-random number generator. Typically will only be specified
             if you have a reason to generate the same set of random numbers, such as for a
@@ -124,7 +124,10 @@ class RedistributionMatrixFile(object):
                 num = i
                 break
         self.cmin = self.header["TLMIN%d" % num]
-        self.cmax = self.header["TLMAX%d" % num]
+        if "TLMAX%d" % num in self.header:
+            self.cmax = self.header["TLMAX%d" % num]
+        else:
+            self.cmax = self.header["NAXIS2"]
 
     def __str__(self):
         return self.filename
