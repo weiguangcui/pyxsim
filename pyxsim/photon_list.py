@@ -19,7 +19,7 @@ from pyxsim.event_list import EventList
 comm = communication_system.communicators[-1]
 
 axes_lookup = {"x": ("y","z"),
-               "y": ("z","x"),
+               "y": ("x","z"),
                "z": ("x","y")}
 
 photon_units = {"Energy": "keV",
